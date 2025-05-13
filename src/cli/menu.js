@@ -4,16 +4,6 @@ import BookingMenu from './menus/booking.js';
 import ReturnProcessingMenu from './menus/returnProcessing.js';
 import FinancialMetricsMenu from './menus/financialMetrics.js';
 
-// 2. Booking Functionality
-// § Users can book a vehicle by providing:
-// o Vehicle ID
-// o Rental duration (days)
-// o Estimated kilometers to be driven
-// § Once booked:
-// o Mark the vehicle as unavailable during the rental period.
-// o Calculate the estimated cost based on the rental duration and
-// kilometers.
-
 class Menu {
     static async showMainMenu() {
         const answers = await inquirer.prompt([
