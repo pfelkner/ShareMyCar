@@ -153,6 +153,155 @@ class VehicleController {
             });
         });
     }
+
+    // Get a booking by ID
+    static async getBookingById(bookingId) {
+        return new Promise((resolve, reject) => {
+            db.get('SELECT * FROM booking WHERE booking_id = ?', [bookingId], (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(row);
+            });
+        });
+    }
+
+    // Check if a booking has been returned
+    static async isBookingReturned(bookingId) {
+        return new Promise((resolve, reject) => {
+            db.get('SELECT * FROM returns WHERE booking_id = ?', [bookingId], (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(!!row);
+            });
+        });
+    }
+
+    // View active bookings
+    static async viewActiveBookings() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT b.*, v.brand, v.model 
+                FROM booking b
+                JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM returns r WHERE r.booking_id = b.booking_id
+                )
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                console.table(rows);
+                resolve();
+            });
+        });
+    }
+
+    // Process vehicle return
+    static async processReturn(answers) {
+        const { bookingId, actualKilometers } = answers;
+        
+        return new Promise((resolve, reject) => {
+            // Get booking details
+            db.get('SELECT * FROM booking WHERE booking_id = ?', [bookingId], (err, booking) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                if (!booking) {
+                    reject(new Error('Booking not found'));
+                    return;
+                }
+
+                // Calculate fees
+                const returnDate = new Date();
+                const dueDate = new Date(booking.due_date);
+                const daysLate = Math.max(0, Math.floor((returnDate - dueDate) / (1000 * 60 * 60 * 24)));
+                const lateFee = daysLate * 10; // 10€ per day
+                const cleaningFee = 20; // 20€ fixed
+                const maintenanceCost = actualKilometers; // 1€ per kilometer
+                const additionalCost = lateFee + cleaningFee + maintenanceCost;
+                const totalCost = booking.est_cost + additionalCost;
+
+                // Format return date for SQLite
+                const formattedReturnDate = returnDate.toISOString().split('T')[0];
+
+                // Start a transaction
+                db.serialize(() => {
+                    db.run('BEGIN TRANSACTION');
+
+                    // Insert return record
+                    db.run(`
+                        INSERT INTO returns (
+                            booking_id, actual_km, return_date, days_late,
+                            late_fee, cleaning_fee, maintenance_cost, total_cost
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        bookingId, actualKilometers, formattedReturnDate, daysLate,
+                        lateFee, cleaningFee, maintenanceCost, totalCost
+                    ], function(err) {
+                        if (err) {
+                            db.run('ROLLBACK');
+                            reject(err);
+                            return;
+                        }
+
+                        // Update vehicle availability
+                        db.run('UPDATE vehicles SET is_available = 1 WHERE id = ?', [booking.vehicle_id], function(err) {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                reject(err);
+                                return;
+                            }
+
+                            db.run('COMMIT');
+                            console.log(`
+Return processed successfully! 🎉
+Booking ID: ${bookingId}
+Actual kilometers: ${actualKilometers}
+Days late: ${daysLate}
+
+Original Booking Cost: €${booking.est_cost.toFixed(2)}
+Additional Costs:
+- Late fee: €${lateFee.toFixed(2)}
+- Cleaning fee: €${cleaningFee.toFixed(2)}
+- Maintenance cost: €${maintenanceCost.toFixed(2)}
+Total additional costs: €${additionalCost.toFixed(2)}
+
+Final Total Cost: €${totalCost.toFixed(2)}
+`);
+                            resolve();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    // View return history
+    static async viewReturnHistory() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT r.*, b.customer_name, v.brand, v.model
+                FROM returns r
+                JOIN booking b ON r.booking_id = b.booking_id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                ORDER BY r.return_date DESC
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                console.table(rows);
+                resolve();
+            });
+        });
+    }
 }
 
 export default VehicleController; 

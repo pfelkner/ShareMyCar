@@ -52,41 +52,64 @@ async function initializeDatabase() {
                         return;
                     }
 
-                    // Check if we need to seed data
-                    db.get("SELECT COUNT(*) as count FROM vehicles", (err, row) => {
+                    // Create Returns table if it doesn't exist
+                    db.run(`
+                        CREATE TABLE IF NOT EXISTS returns (
+                            return_id         INTEGER PRIMARY KEY,
+                            booking_id        INTEGER NOT NULL,
+                            actual_km         INTEGER NOT NULL,
+                            return_date       DATE NOT NULL,
+                            days_late         INTEGER NOT NULL,
+                            late_fee          REAL NOT NULL,
+                            cleaning_fee      REAL NOT NULL,
+                            maintenance_cost  REAL NOT NULL,
+                            total_cost        REAL NOT NULL,
+                            FOREIGN KEY (booking_id) REFERENCES booking(booking_id)
+                                ON DELETE RESTRICT
+                                ON UPDATE CASCADE
+                        )
+                    `, (err) => {
                         if (err) {
                             reject(err);
                             return;
                         }
 
-                        if (row.count < 10) {
-                            console.log('Seeding database with sample vehicles...');
-                            
-                            // Prepare the insert statement
-                            const stmt = db.prepare(`
-                                INSERT INTO vehicles (
-                                    brand, model, mileage, daily_rental_price, 
-                                    maintenance_cost_per_kilometer, is_available
-                                ) VALUES (?, ?, ?, ?, ?, ?)
-                            `);
+                        // Check if we need to seed data
+                        db.get("SELECT COUNT(*) as count FROM vehicles", (err, row) => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
 
-                            // Insert each vehicle
-                            seedVehicles.forEach(vehicle => {
-                                stmt.run(
-                                    vehicle.brand,
-                                    vehicle.model,
-                                    vehicle.mileage,
-                                    vehicle.daily_rental_price,
-                                    vehicle.maintenance_cost_per_kilometer,
-                                    vehicle.is_available ? 1 : 0
-                                );
-                            });
+                            if (row.count < 10) {
+                                console.log('Seeding database with sample vehicles...');
+                                
+                                // Prepare the insert statement
+                                const stmt = db.prepare(`
+                                    INSERT INTO vehicles (
+                                        brand, model, mileage, daily_rental_price, 
+                                        maintenance_cost_per_kilometer, is_available
+                                    ) VALUES (?, ?, ?, ?, ?, ?)
+                                `);
 
-                            stmt.finalize();
-                            console.log('Database seeded successfully! 🚗');
-                        }
+                                // Insert each vehicle
+                                seedVehicles.forEach(vehicle => {
+                                    stmt.run(
+                                        vehicle.brand,
+                                        vehicle.model,
+                                        vehicle.mileage,
+                                        vehicle.daily_rental_price,
+                                        vehicle.maintenance_cost_per_kilometer,
+                                        vehicle.is_available ? 1 : 0
+                                    );
+                                });
 
-                        resolve();
+                                stmt.finalize();
+                                console.log('Database seeded successfully! 🚗');
+                            }
+
+                            resolve();
+                        });
                     });
                 });
             });
