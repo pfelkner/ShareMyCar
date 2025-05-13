@@ -201,7 +201,84 @@ class VehicleController {
         });
     }
 
-    // Process vehicle return
+    // Check if vehicle needs maintenance
+    static async checkMaintenance(vehicleId, newMileage) {
+        return new Promise((resolve, reject) => {
+            db.get('SELECT * FROM vehicles WHERE id = ?', [vehicleId], (err, vehicle) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                if (!vehicle) {
+                    reject(new Error('Vehicle not found'));
+                    return;
+                }
+
+                // Check if mileage exceeds threshold (10,000 km)
+                const maintenanceThreshold = 10000;
+                const lastMaintenanceMileage = vehicle.mileage - (vehicle.mileage % maintenanceThreshold);
+                const needsMaintenance = newMileage >= lastMaintenanceMileage + maintenanceThreshold;
+
+                if (needsMaintenance) {
+                    // Calculate maintenance cost (1€ per kilometer since last maintenance)
+                    const kilometersSinceLastMaintenance = newMileage - lastMaintenanceMileage;
+                    const maintenanceCost = kilometersSinceLastMaintenance;
+
+                    // Create maintenance record
+                    const maintenanceDate = new Date();
+                    const formattedDate = maintenanceDate.toISOString().split('T')[0];
+
+                    // Start a transaction
+                    db.serialize(() => {
+                        db.run('BEGIN TRANSACTION');
+
+                        // Insert maintenance record
+                        db.run(`
+                            INSERT INTO maintenance (
+                                vehicle_id, maintenance_date, mileage, cost, description, is_completed
+                            ) VALUES (?, ?, ?, ?, ?, ?)
+                        `, [
+                            vehicleId,
+                            formattedDate,
+                            newMileage,
+                            maintenanceCost,
+                            `Automatic maintenance at ${newMileage} km`,
+                            1 // Automatically mark as completed
+                        ], function(err) {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                reject(err);
+                                return;
+                            }
+
+                            // Update vehicle availability
+                            db.run('UPDATE vehicles SET is_available = 1 WHERE id = ?', [vehicleId], function(err) {
+                                if (err) {
+                                    db.run('ROLLBACK');
+                                    reject(err);
+                                    return;
+                                }
+
+                                db.run('COMMIT');
+                                console.log(`
+Automatic maintenance completed! 🛠️
+Vehicle ID: ${vehicleId}
+Mileage: ${newMileage}
+Maintenance cost: €${maintenanceCost.toFixed(2)}
+`);
+                                resolve(true);
+                            });
+                        });
+                    });
+                } else {
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    // Process vehicle return with maintenance check
     static async processReturn(answers) {
         const { bookingId, actualKilometers } = answers;
         
@@ -235,48 +312,72 @@ class VehicleController {
                 db.serialize(() => {
                     db.run('BEGIN TRANSACTION');
 
-                    // Insert return record
-                    db.run(`
-                        INSERT INTO returns (
-                            booking_id, actual_km, return_date, days_late,
-                            late_fee, cleaning_fee, maintenance_cost, total_cost
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    `, [
-                        bookingId, actualKilometers, formattedReturnDate, daysLate,
-                        lateFee, cleaningFee, maintenanceCost, totalCost
-                    ], function(err) {
+                    // Get current vehicle mileage
+                    db.get('SELECT mileage FROM vehicles WHERE id = ?', [booking.vehicle_id], (err, vehicle) => {
                         if (err) {
                             db.run('ROLLBACK');
                             reject(err);
                             return;
                         }
 
-                        // Update vehicle availability
-                        db.run('UPDATE vehicles SET is_available = 1 WHERE id = ?', [booking.vehicle_id], function(err) {
-                            if (err) {
+                        const newMileage = vehicle.mileage + actualKilometers;
+
+                        // Check if maintenance is needed
+                        this.checkMaintenance(booking.vehicle_id, newMileage)
+                            .then(needsMaintenance => {
+                                // Update vehicle mileage
+                                db.run(
+                                    'UPDATE vehicles SET mileage = ? WHERE id = ?',
+                                    [newMileage, booking.vehicle_id],
+                                    function(err) {
+                                        if (err) {
+                                            db.run('ROLLBACK');
+                                            reject(err);
+                                            return;
+                                        }
+
+                                        // Insert return record
+                                        db.run(`
+                                            INSERT INTO returns (
+                                                booking_id, actual_km, return_date, days_late,
+                                                late_fee, cleaning_fee, maintenance_cost, total_cost
+                                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                        `, [
+                                            bookingId, actualKilometers, formattedReturnDate, daysLate,
+                                            lateFee, cleaningFee, maintenanceCost, totalCost
+                                        ], function(err) {
+                                            if (err) {
+                                                db.run('ROLLBACK');
+                                                reject(err);
+                                                return;
+                                            }
+
+                                            db.run('COMMIT');
+                                            console.log(`
+                                                Return processed successfully! 🎉
+                                                Booking ID: ${bookingId}
+                                                Actual kilometers: ${actualKilometers}
+                                                New vehicle mileage: ${newMileage}
+                                                Days late: ${daysLate}
+
+                                                Original Booking Cost: €${booking.est_cost.toFixed(2)}
+                                                Additional Costs:
+                                                - Late fee: €${lateFee.toFixed(2)}
+                                                - Cleaning fee: €${cleaningFee.toFixed(2)}
+                                                - Maintenance cost: €${maintenanceCost.toFixed(2)}
+                                                Total additional costs: €${additionalCost.toFixed(2)}
+
+                                                Final Total Cost: €${totalCost.toFixed(2)}
+                                                `);
+                                            resolve();
+                                        });
+                                    }
+                                );
+                            })
+                            .catch(err => {
                                 db.run('ROLLBACK');
                                 reject(err);
-                                return;
-                            }
-
-                            db.run('COMMIT');
-                            console.log(`
-Return processed successfully! 🎉
-Booking ID: ${bookingId}
-Actual kilometers: ${actualKilometers}
-Days late: ${daysLate}
-
-Original Booking Cost: €${booking.est_cost.toFixed(2)}
-Additional Costs:
-- Late fee: €${lateFee.toFixed(2)}
-- Cleaning fee: €${cleaningFee.toFixed(2)}
-- Maintenance cost: €${maintenanceCost.toFixed(2)}
-Total additional costs: €${additionalCost.toFixed(2)}
-
-Final Total Cost: €${totalCost.toFixed(2)}
-`);
-                            resolve();
-                        });
+                            });
                     });
                 });
             });
@@ -299,6 +400,111 @@ Final Total Cost: €${totalCost.toFixed(2)}
                 }
                 console.table(rows);
                 resolve();
+            });
+        });
+    }
+
+    // View maintenance history
+    static async viewMaintenanceHistory() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT m.*, v.brand, v.model
+                FROM maintenance m
+                JOIN vehicles v ON m.vehicle_id = v.id
+                ORDER BY m.maintenance_date DESC
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                console.table(rows);
+                resolve();
+            });
+        });
+    }
+
+    // View vehicles needing maintenance
+    static async viewVehiclesNeedingMaintenance() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT v.*, m.maintenance_date, m.mileage as maintenance_mileage
+                FROM vehicles v
+                JOIN maintenance m ON v.id = m.vehicle_id
+                WHERE m.is_completed = 0
+                ORDER BY m.maintenance_date ASC
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                console.table(rows);
+                resolve();
+            });
+        });
+    }
+
+    // Complete maintenance
+    static async completeMaintenance(maintenanceId) {
+        return new Promise((resolve, reject) => {
+            db.serialize(() => {
+                db.run('BEGIN TRANSACTION');
+
+                // Get maintenance record
+                db.get('SELECT * FROM maintenance WHERE maintenance_id = ?', [maintenanceId], (err, maintenance) => {
+                    if (err) {
+                        db.run('ROLLBACK');
+                        reject(err);
+                        return;
+                    }
+
+                    if (!maintenance) {
+                        db.run('ROLLBACK');
+                        reject(new Error('Maintenance record not found'));
+                        return;
+                    }
+
+                    if (maintenance.is_completed) {
+                        db.run('ROLLBACK');
+                        reject(new Error('Maintenance already completed'));
+                        return;
+                    }
+
+                    // Update maintenance record
+                    db.run(
+                        'UPDATE maintenance SET is_completed = 1 WHERE maintenance_id = ?',
+                        [maintenanceId],
+                        function(err) {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                reject(err);
+                                return;
+                            }
+
+                            // Update vehicle availability
+                            db.run(
+                                'UPDATE vehicles SET is_available = 1 WHERE id = ?',
+                                [maintenance.vehicle_id],
+                                function(err) {
+                                    if (err) {
+                                        db.run('ROLLBACK');
+                                        reject(err);
+                                        return;
+                                    }
+
+                                    db.run('COMMIT');
+                                    console.log(`
+Maintenance completed successfully! 🛠️
+Maintenance ID: ${maintenanceId}
+Vehicle ID: ${maintenance.vehicle_id}
+Mileage: ${maintenance.mileage}
+Cost: €${maintenance.cost.toFixed(2)}
+`);
+                                    resolve();
+                                }
+                            );
+                        }
+                    );
+                });
             });
         });
     }
