@@ -12,6 +12,7 @@ class VehicleManagementMenu {
                     'View all vehicles',
                     'Add vehicle',
                     'Set vehicle availability',
+                    'View maintenance history', // TODO check if this is needed
                     'Back to main menu'
                 ]
             }
@@ -26,6 +27,9 @@ class VehicleManagementMenu {
                 break;
             case 'Set vehicle availability':
                 await this.showSetAvailabilityMenu();
+                break;
+            case 'View maintenance history':
+                await VehicleController.viewMaintenanceHistory();
                 break;
             case 'Back to main menu':
                 return;
@@ -78,7 +82,7 @@ class VehicleManagementMenu {
         try {
             await VehicleController.addVehicle(answers);
         } catch (error) {
-            console.log('Please try again with valid data.');
+            console.error('Error adding vehicle:', error.message);
         }
     }
 
@@ -98,7 +102,11 @@ class VehicleManagementMenu {
             }
         ]);
 
-        await VehicleController.setAvailability(answers.vehicleId, answers.isAvailable);
+        try {
+            await VehicleController.setAvailability(answers.vehicleId, answers.isAvailable);
+        } catch (error) {
+            console.error('Error setting vehicle availability:', error.message);
+        }
     }
 }
 

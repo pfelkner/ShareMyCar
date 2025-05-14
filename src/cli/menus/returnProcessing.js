@@ -1,5 +1,6 @@
 import inquirer from 'inquirer';
-import VehicleController from '../../controllers/VehicleController.js';
+import ReturnController from '../../controllers/ReturnController.js';
+import BookingController from '../../controllers/BookingController.js';
 
 class ReturnProcessingMenu {
     static async show() {
@@ -18,10 +19,10 @@ class ReturnProcessingMenu {
 
         switch (answers.action) {
             case 'Process vehicle return':
-                await this.processVehicleReturn();
+                await this.showProcessReturnMenu();
                 break;
             case 'View return history':
-                await this.viewReturnHistory();
+                await this.showReturnHistoryMenu();
                 break;
             case 'Back to main menu':
                 return;
@@ -31,63 +32,50 @@ class ReturnProcessingMenu {
         await this.show();
     }
 
-    static async processVehicleReturn() {
-        // First, show active bookings
-        console.log('\nActive Bookings:');
-        await VehicleController.viewActiveBookings();
-        console.log('\n');
+    static async showProcessReturnMenu() {
+        try {
+            // First show active bookings
+            await BookingController.viewActiveBookings();
 
+            const answers = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'bookingId',
+                    message: 'Enter booking ID:',
+                    validate: input => input.trim().length > 0 || 'Booking ID is required'
+                },
+                {
+                    type: 'number',
+                    name: 'actualKilometers',
+                    message: 'Enter actual kilometers driven:',
+                    validate: input => input > 0 || 'Kilometers must be greater than 0'
+                }
+            ]);
+
+            await ReturnController.processReturn(answers);
+        } catch (error) {
+            console.error('Error processing return:', error.message);
+        }
+    }
+
+    static async showReturnHistoryMenu() {
         const answers = await inquirer.prompt([
             {
                 type: 'input',
                 name: 'bookingId',
-                message: 'Enter booking ID:',
-                validate: async (input) => {
-                    if (!input.trim()) return 'Booking ID is required';
-                    if (isNaN(input)) return 'Booking ID must be a number';
-                    
-                    try {
-                        const booking = await VehicleController.getBookingById(input);
-                        if (!booking) return 'Booking not found';
-                        if (await VehicleController.isBookingReturned(input)) return 'This booking has already been returned';
-                        return true;
-                    } catch (error) {
-                        return 'Error validating booking ID';
-                    }
-                }
-            },
-            {
-                type: 'number',
-                name: 'actualKilometers',
-                message: 'Enter actual kilometers driven:',
-                validate: input => {
-                    if (!input) return 'Actual kilometers is required';
-                    if (input < 0) return 'Actual kilometers cannot be negative';
-                    return true;
-                }
+                message: 'Enter booking ID to view return history (or leave empty for all returns):',
+                validate: input => input.trim().length === 0 || !isNaN(input) || 'Booking ID must be a number'
             }
         ]);
 
         try {
-            await VehicleController.processReturn(answers);
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+            if (answers.bookingId) {
+                await ReturnController.viewReturnHistory(answers.bookingId);
+            } else {
+                await ReturnController.viewReturnHistory();
+            }
         } catch (error) {
-            console.error('\nError processing return:', error.message);
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
-        }
-    }
-
-    static async viewReturnHistory() {
-        try {
-            await VehicleController.viewReturnHistory();
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
-        } catch (error) {
-            console.error('\nError viewing return history:', error.message);
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+            console.error('Error viewing return history:', error.message);
         }
     }
 }

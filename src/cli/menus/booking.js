@@ -1,4 +1,5 @@
 import inquirer from 'inquirer';
+import BookingController from '../../controllers/BookingController.js';
 import VehicleController from '../../controllers/VehicleController.js';
 
 // 2. Booking Functionality
@@ -19,15 +20,27 @@ class BookingMenu {
                 name: 'action',
                 message: 'Booking Management:',
                 choices: [
-                    'Book vehicle',
+                    'Create new booking',
+                    'View active bookings',
+                    'View booking details',
+                    'Cancel booking',
                     'Back to main menu'
                 ]
             }
         ]);
 
         switch (answers.action) {
-            case 'Book vehicle':
-                await this.showBookVehicleMenu();
+            case 'Create new booking':
+                await this.showCreateBookingMenu();
+                break;
+            case 'View active bookings':
+                await BookingController.viewActiveBookings();
+                break;
+            case 'View booking details':
+                await this.showViewBookingMenu();
+                break;
+            case 'Cancel booking':
+                await this.showCancelBookingMenu();
                 break;
             case 'Back to main menu':
                 return;
@@ -37,69 +50,96 @@ class BookingMenu {
         await this.show();
     }
 
-    static async showBookVehicleMenu() {
-        // First, show available vehicles
-        console.log('\nAvailable Vehicles:');
-        await VehicleController.viewAllVehicles();
-        console.log('\n');
+    static async showCreateBookingMenu() {
+        try {
+            // First show available vehicles
+            await VehicleController.viewAllVehicles();
 
+            const answers = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'customerName',
+                    message: 'Enter customer name:',
+                    validate: input => input.trim().length > 0 || 'Customer name is required'
+                },
+                {
+                    type: 'input',
+                    name: 'vehicleId',
+                    message: 'Enter vehicle ID:',
+                    validate: input => input.trim().length > 0 || 'Vehicle ID is required'
+                },
+                {
+                    type: 'number',
+                    name: 'rentalDuration',
+                    message: 'Enter rental duration (days):',
+                    validate: input => input > 0 || 'Duration must be greater than 0'
+                },
+                {
+                    type: 'number',
+                    name: 'estimatedKilometers',
+                    message: 'Enter estimated kilometers:',
+                    validate: input => input > 0 || 'Kilometers must be greater than 0'
+                }
+            ]);
+
+            // Calculate dates
+            const startDate = new Date();
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + answers.rentalDuration);
+
+            const bookingData = {
+                customerName: answers.customerName,
+                vehicleId: answers.vehicleId,
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                estimatedKilometers: answers.estimatedKilometers
+            };
+
+            await BookingController.createBooking(bookingData);
+        } catch (error) {
+            console.error('Error creating booking:', error.message);
+        }
+    }
+
+    static async showViewBookingMenu() {
         const answers = await inquirer.prompt([
             {
-                type: 'text',
-                name: 'customerName',
-                message: 'Enter your name:',
-                validate: input => input.trim().length > 0 || 'Customer name is required'
-            },
-            {
                 type: 'input',
-                name: 'vehicleId',
-                message: 'Enter vehicle ID:',
-                validate: async (input) => {
-                    if (!input.trim()) return 'Vehicle ID is required';
-                    if (isNaN(input)) return 'Vehicle ID must be a number';
-                    
-                    try {
-                        const vehicle = await VehicleController.getVehicleById(input);
-                        if (!vehicle) return 'Vehicle not found';
-                        if (!vehicle.is_available) return 'Vehicle is not available';
-                        return true;
-                    } catch (error) {
-                        return 'Error validating vehicle ID';
-                    }
-                }
-            },
-            {
-                type: 'number',
-                name: 'rentalDuration',
-                message: 'Enter rental duration (days):',
-                validate: input => {
-                    if (!input) return 'Rental duration is required';
-                    if (input <= 0) return 'Rental duration must be greater than 0';
-                    if (input > 365) return 'Rental duration cannot exceed 365 days';
-                    return true;
-                }
-            },
-            {
-                type: 'number',
-                name: 'estimatedKilometers',
-                message: 'Enter estimated kilometers to be driven:',
-                validate: input => {
-                    if (!input) return 'Estimated kilometers is required';
-                    if (input <= 0) return 'Estimated kilometers must be greater than 0';
-                    if (input > 10000) return 'Estimated kilometers cannot exceed 10,000 km';
-                    return true;
-                }
+                name: 'bookingId',
+                message: 'Enter booking ID:',
+                validate: input => input.trim().length > 0 || 'Booking ID is required'
             }
         ]);
 
         try {
-            await VehicleController.bookVehicle(answers);
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+            await BookingController.viewBooking(answers.bookingId);
         } catch (error) {
-            console.error('\nError booking vehicle:', error.message);
-            console.log('\nPress Enter to continue...');
-            await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+            console.error('Error viewing booking:', error.message);
+        }
+    }
+
+    static async showCancelBookingMenu() {
+        const answers = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'bookingId',
+                message: 'Enter booking ID to cancel:',
+                validate: input => input.trim().length > 0 || 'Booking ID is required'
+            },
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: 'Are you sure you want to cancel this booking?',
+                default: false
+            }
+        ]);
+
+        if (answers.confirm) {
+            try {
+                await BookingController.cancelBooking(answers.bookingId);
+            } catch (error) {
+                console.error('Error cancelling booking:', error.message);
+            }
         }
     }
 }
