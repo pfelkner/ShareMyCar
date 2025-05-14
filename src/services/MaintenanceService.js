@@ -62,11 +62,11 @@ class MaintenanceService {
 
                                 db.run('COMMIT');
                                 console.log(`
-Automatic maintenance completed! 🛠️
-Vehicle ID: ${vehicleId}
-Mileage: ${newMileage}
-Maintenance cost: €${maintenanceCost.toFixed(2)}
-`);
+                                    Automatic maintenance completed!
+                                    Vehicle ID: ${vehicleId}
+                                    Mileage: ${newMileage}
+                                    Maintenance cost: €${maintenanceCost.toFixed(2)}
+                                    `);
                                 resolve(true);
                             });
                         });

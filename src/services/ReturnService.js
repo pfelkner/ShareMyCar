@@ -78,7 +78,7 @@ class ReturnService {
 
                                             db.run('COMMIT');
                                             console.log(`
-                                                Return processed successfully! 🎉
+                                                Return processed successfully!
                                                 Booking ID: ${bookingId}
                                                 Actual kilometers: ${actualKilometers}
                                                 New vehicle mileage: ${newMileage}
@@ -104,6 +104,43 @@ class ReturnService {
                             });
                     });
                 });
+            });
+        });
+    }
+
+    static async getReturnsByVehicleId(vehicleId) {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT r.*, b.customer_name, v.brand, v.model
+                FROM returns r
+                JOIN booking b ON r.booking_id = b.booking_id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE b.vehicle_id = ?
+                ORDER BY r.return_date DESC
+            `, [vehicleId], (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(rows);
+            });
+        });
+    }
+
+    static async getReturnHistory() {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT r.*, b.customer_name, v.brand, v.model
+                FROM returns r
+                JOIN booking b ON r.booking_id = b.booking_id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                ORDER BY r.return_date DESC
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve(rows);
             });
         });
     }

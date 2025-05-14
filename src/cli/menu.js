@@ -35,7 +35,7 @@ class Menu {
                 await FinancialMetricsMenu.show();
                 break;
             case 'Exit':
-                console.log('Goodbye! 👋');
+                console.log('Goodbye!');
                 process.exit(0);
         }
 

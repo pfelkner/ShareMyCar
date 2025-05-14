@@ -45,7 +45,7 @@ class FinancialMetricsMenu {
             // Calculate total revenue from active bookings
             const activeRevenue = activeBookings.reduce((total, booking) => total + booking.est_cost, 0);
             
-            console.log('\nRevenue Report 📊');
+            console.log('\nRevenue Report');
             console.log('----------------');
             console.log(`Active Bookings Revenue: €${activeRevenue.toFixed(2)}`);
             
@@ -78,7 +78,7 @@ class FinancialMetricsMenu {
             const maintenanceHistory = await VehicleController.viewMaintenanceHistory();
             const totalMaintenanceCost = maintenanceHistory.reduce((total, maint) => total + maint.cost, 0);
             
-            console.log('\nProfit Analysis 📈');
+            console.log('\nProfit Analysis');
             console.log('----------------');
             console.log(`Total Revenue: €${totalRevenue.toFixed(2)}`);
             console.log(`Total Maintenance Costs: €${totalMaintenanceCost.toFixed(2)}`);

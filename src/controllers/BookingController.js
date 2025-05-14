@@ -15,7 +15,7 @@ class BookingController {
 
             const result = await BookingService.createBooking(bookingData);
             console.log(`
-                Booking created successfully! 🎉
+                Booking created successfully!
                 Booking ID: ${result.bookingId}
                 Total Cost: €${result.totalCost.toFixed(2)}
                 - Rental Cost: €${result.rentalCost.toFixed(2)}
@@ -63,7 +63,7 @@ class BookingController {
     static async cancelBooking(bookingId) {
         try {
             await BookingService.cancelBooking(bookingId);
-            console.log(`Booking ${bookingId} cancelled successfully! ✅`);
+            console.log(`Booking ${bookingId} cancelled successfully!`);
         } catch (error) {
             console.error('Error cancelling booking:', error.message);
             throw error;

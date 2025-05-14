@@ -125,7 +125,7 @@ async function initializeDatabase() {
                                     });
 
                                     stmt.finalize();
-                                    console.log('Database seeded successfully! 🚗');
+                                    console.log('Database seeded successfully!');
                                 }
 
                                 resolve();
@@ -154,7 +154,7 @@ export function dropTable(tableName) {
                 reject(err);
                 return;
             }
-            console.log(`Table ${tableName} dropped successfully! 🗑️`);
+            console.log(`Table ${tableName} dropped successfully!`);
             resolve();
         });
     });
@@ -179,14 +179,14 @@ export function dropAllTables() {
                     reject(err);
                     return;
                 }
-                console.log('Table booking dropped successfully! 🗑️');
+                console.log('Table booking dropped successfully!');
 
                 db.run('DROP TABLE IF EXISTS vehicles;', (err) => {
                     if (err) {
                         reject(err);
                         return;
                     }
-                    console.log('Table vehicles dropped successfully! 🗑️');
+                    console.log('Table vehicles dropped successfully!');
                     resolve();
                 });
             });

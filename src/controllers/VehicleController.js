@@ -34,7 +34,7 @@ class VehicleController {
                             reject(err);
                             return;
                         }
-                        console.log('Vehicle added successfully! 🚗');
+                        console.log('Vehicle added successfully!');
                         resolve();
                     }
                 );
@@ -57,7 +57,7 @@ class VehicleController {
                     reject(err);
                     return;
                 }
-                console.log(`Vehicle ${vehicleId} availability updated successfully! 🚗 ${isAvailable ? 'available ✅' : 'unavailable ❌'}`);
+                console.log(`Vehicle ${vehicleId} availability updated successfully! ${isAvailable ? 'available' : 'unavailable'}`);
                 resolve();
             });
         });
@@ -136,16 +136,7 @@ class VehicleController {
                                 }
 
                                 db.run('COMMIT');
-                                console.log(`
-                                    Booking confirmed! 🎉
-                                    Vehicle: ${vehicle.brand} ${vehicle.model}
-                                    Customer: ${customerName}
-                                    Duration: ${rentalDuration} days
-                                    Estimated kilometers: ${estimatedKilometers}
-                                    Start date: ${formattedStartDate}
-                                    Due date: ${formattedDueDate}
-                                    Estimated cost: $${estimatedCost.toFixed(2)}
-                                    `);
+                                console.log('Booking confirmed!');
                                 resolve();
                             });
                         }
@@ -262,12 +253,7 @@ class VehicleController {
                                 }
 
                                 db.run('COMMIT');
-                                console.log(`
-Automatic maintenance completed! 🛠️
-Vehicle ID: ${vehicleId}
-Mileage: ${newMileage}
-Maintenance cost: €${maintenanceCost.toFixed(2)}
-`);
+                                console.log('Automatic maintenance completed!');
                                 resolve(true);
                             });
                         });
@@ -392,13 +378,7 @@ Maintenance cost: €${maintenanceCost.toFixed(2)}
                                     }
 
                                     db.run('COMMIT');
-                                    console.log(`
-                                    Maintenance completed successfully! 🛠️
-                                    Maintenance ID: ${maintenanceId}
-                                    Vehicle ID: ${maintenance.vehicle_id}
-                                    Mileage: ${maintenance.mileage}
-                                    Cost: €${maintenance.cost.toFixed(2)}
-                                    `);
+                                    console.log('Maintenance completed successfully!');
                                     resolve();
                                 }
                             );
