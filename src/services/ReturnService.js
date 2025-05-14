@@ -1,5 +1,6 @@
 import db from '../config/database.js';
 import MaintenanceService from './MaintenanceService.js';
+import TransactionService from './TransactionService.js';
 
 class ReturnService {
     // Process vehicle return
@@ -76,24 +77,44 @@ class ReturnService {
                                                 return;
                                             }
 
-                                            db.run('COMMIT');
-                                            console.log(`
-                                                Return processed successfully!
-                                                Booking ID: ${bookingId}
-                                                Actual kilometers: ${actualKilometers}
-                                                New vehicle mileage: ${newMileage}
-                                                Days late: ${daysLate}
+                                            const returnId = this.lastID;
 
-                                                Original Booking Cost: €${booking.est_cost.toFixed(2)}
-                                                Additional Costs:
-                                                - Late fee: €${lateFee.toFixed(2)}
-                                                - Cleaning fee: €${cleaningFee.toFixed(2)}
-                                                - Maintenance cost: €${maintenanceCost.toFixed(2)}
-                                                Total additional costs: €${additionalCost.toFixed(2)}
+                                            // Log transaction
+                                            TransactionService.logReturnTransaction({
+                                                returnId,
+                                                bookingId,
+                                                customerName: booking.customer_name,
+                                                vehicleId: booking.vehicle_id,
+                                                returnDate: formattedReturnDate,
+                                                rentalDuration: booking.est_days,
+                                                baseRevenue: booking.est_cost,
+                                                cleaningFee,
+                                                maintenanceCost,
+                                                lateFee,
+                                                totalAmount: totalCost
+                                            }).then(() => {
+                                                db.run('COMMIT');
+                                                console.log(`
+                                                    Return processed successfully!
+                                                    Booking ID: ${bookingId}
+                                                    Actual kilometers: ${actualKilometers}
+                                                    New vehicle mileage: ${newMileage}
+                                                    Days late: ${daysLate}
 
-                                                Final Total Cost: €${totalCost.toFixed(2)}
-                                                `);
-                                            resolve();
+                                                    Original Booking Cost: €${booking.est_cost.toFixed(2)}
+                                                    Additional Costs:
+                                                    - Late fee: €${lateFee.toFixed(2)}
+                                                    - Cleaning fee: €${cleaningFee.toFixed(2)}
+                                                    - Maintenance cost: €${maintenanceCost.toFixed(2)}
+                                                    Total additional costs: €${additionalCost.toFixed(2)}
+
+                                                    Final Total Cost: €${totalCost.toFixed(2)}
+                                                    `);
+                                                resolve();
+                                            }).catch(err => {
+                                                db.run('ROLLBACK');
+                                                reject(err);
+                                            });
                                         });
                                     }
                                 );

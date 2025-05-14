@@ -1,4 +1,5 @@
 import db from '../config/database.js';
+import TransactionService from './TransactionService.js';
 
 class BookingService {
     static async createBooking(bookingData) {
@@ -46,21 +47,34 @@ class BookingService {
 
                         const bookingId = this.lastID;
 
-                        // Update vehicle availability
-                        db.run('UPDATE vehicles SET is_available = 0 WHERE id = ?', [vehicleId], function(err) {
-                            if (err) {
-                                db.run('ROLLBACK');
-                                reject(err);
-                                return;
-                            }
+                        // Log transaction
+                        TransactionService.logBookingTransaction({
+                            bookingId,
+                            customerName,
+                            vehicleId,
+                            startDate,
+                            endDate,
+                            estCost: totalCost
+                        }).then(() => {
+                            // Update vehicle availability
+                            db.run('UPDATE vehicles SET is_available = 0 WHERE id = ?', [vehicleId], function(err) {
+                                if (err) {
+                                    db.run('ROLLBACK');
+                                    reject(err);
+                                    return;
+                                }
 
-                            db.run('COMMIT');
-                            resolve({
-                                bookingId,
-                                totalCost,
-                                rentalCost,
-                                maintenanceCost
+                                db.run('COMMIT');
+                                resolve({
+                                    bookingId,
+                                    totalCost,
+                                    rentalCost,
+                                    maintenanceCost
+                                });
                             });
+                        }).catch(err => {
+                            db.run('ROLLBACK');
+                            reject(err);
                         });
                     });
                 });
