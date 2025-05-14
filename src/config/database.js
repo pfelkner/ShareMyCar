@@ -157,9 +157,8 @@ async function initializeDatabase() {
                                         });
 
                                         stmt.finalize();
-                                        console.log('Database seeded successfully!');
+                                        console.log('Vehicles seeded successfully!');
                                     }
-
                                     resolve();
                                 });
                             });
@@ -179,7 +178,8 @@ initializeDatabase().catch(err => {
 
 export default db;
 
-// Function to drop a table safely
+
+// TODO remove drop methods when done as they are only needed for dev purposes
 export function dropTable(tableName) {
     return new Promise((resolve, reject) => {
         db.run(`DROP TABLE IF EXISTS ${tableName};`, (err) => {
@@ -192,13 +192,9 @@ export function dropTable(tableName) {
         });
     });
 }
-
-// TODO remove drop methods when done as they are only needed for dev purposes
-// Function to drop all tables in the correct order
 export function dropAllTables() {
     return new Promise((resolve, reject) => {
         db.serialize(() => {
-            // Enable foreign key support
             db.run('PRAGMA foreign_keys = ON;', (err) => {
                 if (err) {
                     reject(err);
@@ -206,7 +202,6 @@ export function dropAllTables() {
                 }
             });
 
-            // Drop tables in the correct order (child tables first)
             db.run('DROP TABLE IF EXISTS booking;', (err) => {
                 if (err) {
                     reject(err);

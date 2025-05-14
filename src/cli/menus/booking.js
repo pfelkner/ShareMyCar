@@ -2,16 +2,6 @@ import inquirer from 'inquirer';
 import BookingController from '../../controllers/BookingController.js';
 import VehicleController from '../../controllers/VehicleController.js';
 
-// 2. Booking Functionality
-// § Users can book a vehicle by providing:
-// o Vehicle ID
-// o Rental duration (days)
-// o Estimated kilometers to be driven
-// § Once booked:
-// o Mark the vehicle as unavailable during the rental period.
-// o Calculate the estimated cost based on the rental duration and
-// kilometers.
-
 class BookingMenu {
     static async show() {
         const answers = await inquirer.prompt([

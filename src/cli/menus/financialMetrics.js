@@ -1,7 +1,5 @@
 import inquirer from 'inquirer';
-import VehicleController from '../../controllers/VehicleController.js';
-import BookingController from '../../controllers/BookingController.js';
-import ReturnController from '../../controllers/ReturnController.js';
+import FinancialMetricsService from '../../services/FinancialMetricsService.js';
 
 class FinancialMetricsMenu {
     static async show() {
@@ -11,23 +9,35 @@ class FinancialMetricsMenu {
                 name: 'action',
                 message: 'Financial Metrics:',
                 choices: [
-                    'View revenue reports',
-                    'View maintenance costs',
+                    'View revenue metrics',
+                    'View operational costs',
                     'View profit analysis',
+                    'View vehicle mileage metrics',
+                    'Generate detailed financial report',
+                    'View vehicle-specific metrics',
                     'Back to main menu'
                 ]
             }
         ]);
 
         switch (answers.action) {
-            case 'View revenue reports':
-                await this.showRevenueReport();
+            case 'View revenue metrics':
+                await this.showRevenueMetrics();
                 break;
-            case 'View maintenance costs':
-                await this.showMaintenanceCosts();
+            case 'View operational costs':
+                await this.showOperationalCosts();
                 break;
             case 'View profit analysis':
                 await this.showProfitAnalysis();
+                break;
+            case 'View vehicle mileage metrics':
+                await this.showVehicleMileageMetrics();
+                break;
+            case 'Generate detailed financial report':
+                await this.showDetailedFinancialReport();
+                break;
+            case 'View vehicle-specific metrics':
+                await this.showVehicleSpecificMetrics();
                 break;
             case 'Back to main menu':
                 return;
@@ -37,54 +47,164 @@ class FinancialMetricsMenu {
         await this.show();
     }
 
-    static async showRevenueReport() {
+    static async getDateRange() {
+        return await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'startDate',
+                message: 'Enter start date (YYYY-MM-DD) or press Enter for all time:',
+                validate: input => !input || /^\d{4}-\d{2}-\d{2}$/.test(input) || 'Please enter a valid date in YYYY-MM-DD format'
+            },
+            {
+                type: 'input',
+                name: 'endDate',
+                message: 'Enter end date (YYYY-MM-DD) or press Enter for all time:',
+                validate: input => !input || /^\d{4}-\d{2}-\d{2}$/.test(input) || 'Please enter a valid date in YYYY-MM-DD format'
+            }
+        ]);
+    }
+
+    static async showRevenueMetrics() {
         try {
-            // Get all active bookings
-            const activeBookings = await BookingController.viewActiveBookings();
-            
-            // Calculate total revenue from active bookings
-            const activeRevenue = activeBookings.reduce((total, booking) => total + booking.est_cost, 0);
-            
-            console.log('\nRevenue Report');
+            const { startDate, endDate } = await this.getDateRange();
+            const metrics = await FinancialMetricsService.getRevenueMetrics(
+                startDate || null,
+                endDate || null
+            );
+
+            console.log('\nRevenue Metrics');
             console.log('----------------');
-            console.log(`Active Bookings Revenue: €${activeRevenue.toFixed(2)}`);
-            
-            // Get return history for completed bookings
-            const returns = await ReturnController.viewReturnHistory();
-            const completedRevenue = returns.reduce((total, ret) => total + ret.total_cost, 0);
-            
-            console.log(`Completed Bookings Revenue: €${completedRevenue.toFixed(2)}`);
-            console.log(`Total Revenue: €${(activeRevenue + completedRevenue).toFixed(2)}`);
+            console.log(`Total Revenue: €${metrics.total_revenue?.toFixed(2) || '0.00'}`);
+            console.log(`Total Transactions: ${metrics.total_transactions || 0}`);
+            console.log(`Average Transaction Value: €${metrics.average_transaction_value?.toFixed(2) || '0.00'}`);
         } catch (error) {
-            console.error('Error generating revenue report:', error.message);
+            console.error('Error viewing revenue metrics:', error.message);
         }
     }
 
-    static async showMaintenanceCosts() {
+    static async showOperationalCosts() {
         try {
-            await VehicleController.viewMaintenanceHistory();
+            const { startDate, endDate } = await this.getDateRange();
+            const costs = await FinancialMetricsService.getOperationalCosts(
+                startDate || null,
+                endDate || null
+            );
+
+            console.log('\nOperational Costs');
+            console.log('----------------');
+            console.log(`Total Cleaning Costs: €${costs.total_cleaning_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Total Maintenance Costs: €${costs.total_maintenance_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Total Late Fees: €${costs.total_late_fees?.toFixed(2) || '0.00'}`);
+            console.log(`Total Operational Costs: €${costs.total_operational_costs?.toFixed(2) || '0.00'}`);
         } catch (error) {
-            console.error('Error viewing maintenance costs:', error.message);
+            console.error('Error viewing operational costs:', error.message);
         }
     }
 
     static async showProfitAnalysis() {
         try {
-            // Get all returns to calculate total revenue
-            const returns = await ReturnController.viewReturnHistory();
-            const totalRevenue = returns.reduce((total, ret) => total + ret.total_cost, 0);
-            
-            // Get maintenance history to calculate total costs
-            const maintenanceHistory = await VehicleController.viewMaintenanceHistory();
-            const totalMaintenanceCost = maintenanceHistory.reduce((total, maint) => total + maint.cost, 0);
-            
+            const { startDate, endDate } = await this.getDateRange();
+            const profit = await FinancialMetricsService.getProfitMetrics(
+                startDate || null,
+                endDate || null
+            );
+
             console.log('\nProfit Analysis');
             console.log('----------------');
-            console.log(`Total Revenue: €${totalRevenue.toFixed(2)}`);
-            console.log(`Total Maintenance Costs: €${totalMaintenanceCost.toFixed(2)}`);
-            console.log(`Net Profit: €${(totalRevenue - totalMaintenanceCost).toFixed(2)}`);
+            console.log(`Total Revenue: €${profit.total_revenue?.toFixed(2) || '0.00'}`);
+            console.log(`Total Costs: €${profit.total_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Net Profit: €${profit.net_profit?.toFixed(2) || '0.00'}`);
         } catch (error) {
-            console.error('Error generating profit analysis:', error.message);
+            console.error('Error viewing profit analysis:', error.message);
+        }
+    }
+
+    static async showVehicleMileageMetrics() {
+        try {
+            const metrics = await FinancialMetricsService.getVehicleMileageMetrics();
+
+            console.log('\nVehicle Mileage Metrics');
+            console.log('----------------');
+            console.log(`Total Vehicles: ${metrics.total_vehicles}`);
+            console.log(`Total Mileage: ${metrics.total_mileage} km`);
+            console.log(`Average Mileage: ${metrics.average_mileage?.toFixed(2) || '0.00'} km`);
+            console.log(`Minimum Mileage: ${metrics.min_mileage} km`);
+            console.log(`Maximum Mileage: ${metrics.max_mileage} km`);
+        } catch (error) {
+            console.error('Error viewing vehicle mileage metrics:', error.message);
+        }
+    }
+
+    static async showDetailedFinancialReport() {
+        try {
+            const { startDate, endDate } = await this.getDateRange();
+            const report = await FinancialMetricsService.getDetailedFinancialReport(
+                startDate || null,
+                endDate || null
+            );
+
+            console.log('\nDetailed Financial Report');
+            console.log('=======================');
+            
+            console.log('\nRevenue Metrics');
+            console.log('----------------');
+            console.log(`Total Revenue: €${report.revenue.total_revenue?.toFixed(2) || '0.00'}`);
+            console.log(`Total Transactions: ${report.revenue.total_transactions || 0}`);
+            console.log(`Average Transaction Value: €${report.revenue.average_transaction_value?.toFixed(2) || '0.00'}`);
+
+            console.log('\nOperational Costs');
+            console.log('----------------');
+            console.log(`Total Cleaning Costs: €${report.operationalCosts.total_cleaning_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Total Maintenance Costs: €${report.operationalCosts.total_maintenance_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Total Late Fees: €${report.operationalCosts.total_late_fees?.toFixed(2) || '0.00'}`);
+            console.log(`Total Operational Costs: €${report.operationalCosts.total_operational_costs?.toFixed(2) || '0.00'}`);
+
+            console.log('\nProfit Analysis');
+            console.log('----------------');
+            console.log(`Total Revenue: €${report.profit.total_revenue?.toFixed(2) || '0.00'}`);
+            console.log(`Total Costs: €${report.profit.total_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Net Profit: €${report.profit.net_profit?.toFixed(2) || '0.00'}`);
+
+            console.log('\nVehicle Mileage Metrics');
+            console.log('----------------');
+            console.log(`Total Vehicles: ${report.mileage.total_vehicles}`);
+            console.log(`Total Mileage: ${report.mileage.total_mileage} km`);
+            console.log(`Average Mileage: ${report.mileage.average_mileage?.toFixed(2) || '0.00'} km`);
+            console.log(`Minimum Mileage: ${report.mileage.min_mileage} km`);
+            console.log(`Maximum Mileage: ${report.mileage.max_mileage} km`);
+        } catch (error) {
+            console.error('Error generating detailed financial report:', error.message);
+        }
+    }
+
+    static async showVehicleSpecificMetrics() {
+        try {
+            const { vehicleId } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'vehicleId',
+                    message: 'Enter vehicle ID:',
+                    validate: input => input.trim().length > 0 || 'Vehicle ID is required'
+                }
+            ]);
+
+            const { startDate, endDate } = await this.getDateRange();
+            const metrics = await FinancialMetricsService.getVehicleSpecificMetrics(
+                vehicleId,
+                startDate || null,
+                endDate || null
+            );
+
+            console.log('\nVehicle-Specific Metrics');
+            console.log('----------------');
+            console.log(`Vehicle: ${metrics.brand} ${metrics.model}`);
+            console.log(`Current Mileage: ${metrics.mileage} km`);
+            console.log(`Total Transactions: ${metrics.total_transactions || 0}`);
+            console.log(`Total Revenue: €${metrics.total_revenue?.toFixed(2) || '0.00'}`);
+            console.log(`Total Costs: €${metrics.total_costs?.toFixed(2) || '0.00'}`);
+            console.log(`Net Profit: €${metrics.net_profit?.toFixed(2) || '0.00'}`);
+        } catch (error) {
+            console.error('Error viewing vehicle-specific metrics:', error.message);
         }
     }
 }
