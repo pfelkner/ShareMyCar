@@ -5,7 +5,7 @@ export class ValidationError extends Error {
     }
 }
 
-// Validate the vehicle data
+// Validate the vehicle data, let user know if any fields are missing or invalid
 export function validateVehicle(vehicleData) {
     const requiredFields = [
         'brand',

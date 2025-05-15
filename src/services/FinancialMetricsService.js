@@ -1,10 +1,14 @@
 import db from '../config/database.js';
 
 class FinancialMetricsService {
+    // Get the revenue metrics
+    // @param startDate (optional) is the start date of the date range to get the metrics for
+    // @param endDate (optional) is the end date of the date range to get the metrics for
     static async getRevenueMetrics(startDate = null, endDate = null) {
         return new Promise((resolve, reject) => {
+            // Query to get the total revenue, total transactions, and average transaction value
             let query = `
-                SELECT 
+                SELECT
                     SUM(total_amount) as total_revenue,
                     COUNT(*) as total_transactions,
                     AVG(total_amount) as average_transaction_value
@@ -12,6 +16,7 @@ class FinancialMetricsService {
             `;
             const params = [];
 
+            // If a date range is provided, add it to the query
             if (startDate && endDate) {
                 query += ' WHERE transaction_date BETWEEN ? AND ?';
                 params.push(startDate, endDate);
@@ -27,10 +32,14 @@ class FinancialMetricsService {
         });
     }
 
+    // Get the operational costs
+    // @param startDate (optional) is the start date of the date range to get the metrics for
+    // @param endDate (optional) is the end date of the date range to get the metrics for
     static async getOperationalCosts(startDate = null, endDate = null) {
         return new Promise((resolve, reject) => {
+            // Query to get the total cleaning costs, total maintenance costs, total late fees, and total operational costs
             let query = `
-                SELECT 
+                SELECT
                     SUM(cleaning_fee) as total_cleaning_costs,
                     SUM(maintenance_cost) as total_maintenance_costs,
                     SUM(late_fee) as total_late_fees,
@@ -39,6 +48,7 @@ class FinancialMetricsService {
             `;
             const params = [];
 
+            // If a date range is provided, add it to the query
             if (startDate && endDate) {
                 query += ' WHERE transaction_date BETWEEN ? AND ?';
                 params.push(startDate, endDate);
@@ -54,8 +64,12 @@ class FinancialMetricsService {
         });
     }
 
+    // Get the profit metrics
+    // @param startDate (optional) is the start date of the date range to get the metrics for
+    // @param endDate (optional) is the end date of the date range to get the metrics for
     static async getProfitMetrics(startDate = null, endDate = null) {
         return new Promise((resolve, reject) => {
+            // Query to get the total revenue, total costs, and net profit
             let query = `
                 SELECT 
                     SUM(total_amount) as total_revenue,
@@ -65,6 +79,7 @@ class FinancialMetricsService {
             `;
             const params = [];
 
+            // If a date range is provided, add it to the query
             if (startDate && endDate) {
                 query += ' WHERE transaction_date BETWEEN ? AND ?';
                 params.push(startDate, endDate);
@@ -80,10 +95,32 @@ class FinancialMetricsService {
         });
     }
 
+    // Get the vehicle mileage metrics
+    // Here i am not quite sure what was meant by 'Average mileage per vehicle'
+    // I have assumed that this is the average mileage of all vehicles as this is more fitting when displaying overall metrics;
+    // alternatively if the average mileage per vehicle across all its rentals is what was meant, the query would have to be modified to:
+    // join the vehicles table with the bookings and returns tables, grouping by vehicle, then calculate the average mileage per car (actual km / bookings)
+    // SELECT
+    //     v.id as vehicle_id,
+    //     v.brand,
+    //     v.model,
+    //     COUNT(DISTINCT b.booking_id) as total_rentals,
+    //     COALESCE(SUM(r.actual_km), 0) as total_kilometers,
+    //     CASE
+    //         WHEN COUNT(DISTINCT b.booking_id) > 0
+    //         THEN ROUND(COALESCE(SUM(r.actual_km), 0) * 1.0 / COUNT(DISTINCT b.booking_id), 2)
+    //         ELSE 0
+    //     END as average_kilometers_per_rental
+    // FROM vehicles v
+    // LEFT JOIN booking b ON v.id = b.vehicle_id
+    // LEFT JOIN returns r ON b.booking_id = r.booking_id
+    // GROUP BY v.id, v.brand, v.model
+    // ORDER BY average_kilometers_per_rental DESC
     static async getVehicleMileageMetrics() {
         return new Promise((resolve, reject) => {
+            // Query to get the total vehicles, total mileage, average mileage, minimum mileage, and maximum mileage
             const query = `
-                SELECT 
+                SELECT
                     COUNT(*) as total_vehicles,
                     SUM(mileage) as total_mileage,
                     AVG(mileage) as average_mileage,
@@ -102,10 +139,13 @@ class FinancialMetricsService {
         });
     }
 
+    // Get the detailed financial report
+    // @param startDate (optional) is the start date of the date range to get the report for
+    // @param endDate (optional) is the end date of the date range to get the report for
     static async getDetailedFinancialReport(startDate = null, endDate = null) {
         return new Promise((resolve, reject) => {
             const report = {};
-
+            // Get all the metrics for the report
             Promise.all([
                 this.getRevenueMetrics(startDate, endDate),
                 this.getOperationalCosts(startDate, endDate),
@@ -123,8 +163,13 @@ class FinancialMetricsService {
         });
     }
 
+    // Get the vehicle specific metrics
+    // @param vehicleId is the ID of the vehicle to get the metrics for
+    // @param startDate (optional) is the start date of the date range to get the metrics for
+    // @param endDate (optional) is the end date of the date range to get the metrics for
     static async getVehicleSpecificMetrics(vehicleId, startDate = null, endDate = null) {
         return new Promise((resolve, reject) => {
+            // Query to get the brand, model, mileage, total transactions, total revenue, total costs, and net profit
             let query = `
                 SELECT 
                     v.brand,
@@ -139,6 +184,7 @@ class FinancialMetricsService {
             `;
             const params = [vehicleId];
 
+            // If a date range is provided, add it to the query
             if (startDate && endDate) {
                 query += ' WHERE v.id = ? AND t.transaction_date BETWEEN ? AND ?';
                 params.push(startDate, endDate);

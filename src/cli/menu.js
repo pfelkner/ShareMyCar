@@ -5,6 +5,7 @@ import ReturnProcessingMenu from './menus/returnProcessing.js';
 import FinancialMetricsMenu from './menus/financialMetrics.js';
 
 class Menu {
+    // This is the entrypoint for the Application
     static async showMainMenu() {
         const answers = await inquirer.prompt([
             {
@@ -21,6 +22,7 @@ class Menu {
             }
         ]);
 
+        // Determine which section the user wants to access
         switch (answers.section) {
             case 'Vehicle Inventory Management':
                 await VehicleManagementMenu.show();

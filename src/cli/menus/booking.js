@@ -3,7 +3,9 @@ import BookingController from '../../controllers/BookingController.js';
 import VehicleController from '../../controllers/VehicleController.js';
 
 class BookingMenu {
+    // Show the booking menu
     static async show() {
+        // Let user select how to interact with the booking system
         const answers = await inquirer.prompt([
             {
                 type: 'list',
@@ -13,24 +15,22 @@ class BookingMenu {
                     'Create new booking',
                     'View active bookings',
                     'View booking details',
-                    'Cancel booking',
                     'Back to main menu'
                 ]
             }
         ]);
 
+        // Determine which action the user wants to perform
+        // @param answers.action is one of the choices above
         switch (answers.action) {
             case 'Create new booking':
-                await this.showCreateBookingMenu();
+                await this.showCreateBookingMenu(); // Part of Requirement 2
                 break;
             case 'View active bookings':
-                await BookingController.viewActiveBookings();
+                await BookingController.viewActiveBookings(); // Not part of Requirements: Lets user see all active bookings
                 break;
             case 'View booking details':
-                await this.showViewBookingMenu();
-                break;
-            case 'Cancel booking':
-                await this.showCancelBookingMenu();
+                await this.showViewBookingMenu(); // Not part of Requirements: Lets user see details of specific booking
                 break;
             case 'Back to main menu':
                 return;
@@ -40,11 +40,13 @@ class BookingMenu {
         await this.show();
     }
 
+    // Show the create booking (sub)menu
     static async showCreateBookingMenu() {
         try {
-            // First show available vehicles
+            // Show vehicles to user
             await VehicleController.viewAllVehicles();
 
+            // Prompt the user for the customer name, vehicle ID, rental duration, and estimated kilometers (as per requirements)
             const answers = await inquirer.prompt([
                 {
                     type: 'input',
@@ -72,11 +74,12 @@ class BookingMenu {
                 }
             ]);
 
-            // Calculate dates
+            // Calculate rental dates
             const startDate = new Date();
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + answers.rentalDuration);
 
+            // Create a booking object with the user's input
             const bookingData = {
                 customerName: answers.customerName,
                 vehicleId: answers.vehicleId,
@@ -85,13 +88,16 @@ class BookingMenu {
                 estimatedKilometers: answers.estimatedKilometers
             };
 
+            // Create a booking in the database
             await BookingController.createBooking(bookingData);
         } catch (error) {
             console.error('Error creating booking:', error.message);
         }
     }
 
+    // Show the view booking (sub)menu
     static async showViewBookingMenu() {
+        // Prompt the user for the booking ID
         const answers = await inquirer.prompt([
             {
                 type: 'input',
@@ -105,31 +111,6 @@ class BookingMenu {
             await BookingController.viewBooking(answers.bookingId);
         } catch (error) {
             console.error('Error viewing booking:', error.message);
-        }
-    }
-
-    static async showCancelBookingMenu() {
-        const answers = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'bookingId',
-                message: 'Enter booking ID to cancel:',
-                validate: input => input.trim().length > 0 || 'Booking ID is required'
-            },
-            {
-                type: 'confirm',
-                name: 'confirm',
-                message: 'Are you sure you want to cancel this booking?',
-                default: false
-            }
-        ]);
-
-        if (answers.confirm) {
-            try {
-                await BookingController.cancelBooking(answers.bookingId);
-            } catch (error) {
-                console.error('Error cancelling booking:', error.message);
-            }
         }
     }
 }

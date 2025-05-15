@@ -3,7 +3,10 @@ import ReturnController from '../../controllers/ReturnController.js';
 import BookingController from '../../controllers/BookingController.js';
 
 class ReturnProcessingMenu {
+    // Show the return processing menu
+    // Not specifically part of requirements but without menu no way to process returns
     static async show() {
+        // Let the user select how to interact with the return processing system
         const answers = await inquirer.prompt([
             {
                 type: 'list',
@@ -17,12 +20,14 @@ class ReturnProcessingMenu {
             }
         ]);
 
+        // Determine which action the user wants to perform
+        // @param answers.action is one of the choices above
         switch (answers.action) {
             case 'Process vehicle return':
-                await this.showProcessReturnMenu();
+                await this.showProcessReturnMenu(); // Part of Requirement 3
                 break;
             case 'View return history':
-                await this.showReturnHistoryMenu();
+                await ReturnController.viewReturnHistory(); // Not part of Requirements: Lets user see all return history, nice to have feature
                 break;
             case 'Back to main menu':
                 return;
@@ -32,17 +37,31 @@ class ReturnProcessingMenu {
         await this.show();
     }
 
+    // Show the process return menu
     static async showProcessReturnMenu() {
         try {
-            // First show active bookings
-            await BookingController.viewActiveBookings();
-
+            // First show active bookings to make sure user knows what they can return
+            const bookings = await BookingController.viewActiveBookings();
+            // Get the booking IDs of the active bookings
+            const eligibleForReturn = bookings.map(booking => booking.booking_id);
+            
+            // Prompt the user for the booking ID and actual kilometers driven
             const answers = await inquirer.prompt([
                 {
                     type: 'input',
                     name: 'bookingId',
                     message: 'Enter booking ID:',
-                    validate: input => input.trim().length > 0 || 'Booking ID is required'
+                    validate: input => {
+                        const bookingId = Number(input);
+                        if (isNaN(bookingId)) {
+                            return 'Booking ID must be a number';
+                        }
+                        // Check if the booking ID is in the list of eligible bookings
+                        if (!eligibleForReturn.includes(bookingId)) {
+                            return 'Invalid booking ID. Please select from the active bookings shown above.';
+                        }
+                        return true;
+                    }
                 },
                 {
                     type: 'number',
@@ -52,30 +71,10 @@ class ReturnProcessingMenu {
                 }
             ]);
 
+            // Process the return
             await ReturnController.processReturn(answers);
         } catch (error) {
             console.error('Error processing return:', error.message);
-        }
-    }
-
-    static async showReturnHistoryMenu() {
-        const answers = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'bookingId',
-                message: 'Enter booking ID to view return history (or leave empty for all returns):',
-                validate: input => input.trim().length === 0 || !isNaN(input) || 'Booking ID must be a number'
-            }
-        ]);
-
-        try {
-            if (answers.bookingId) {
-                await ReturnController.viewReturnHistory(answers.bookingId);
-            } else {
-                await ReturnController.viewReturnHistory();
-            }
-        } catch (error) {
-            console.error('Error viewing return history:', error.message);
         }
     }
 }

@@ -2,34 +2,24 @@ import ReturnService from '../services/ReturnService.js';
 import BookingService from '../services/BookingService.js';
 
 class ReturnController {
+    // Process a return
+    // @param answers is an object containing the booking ID and actual kilometers driven
     static async processReturn(answers) {
-        try {
-            // Validate booking exists and is active
-            const booking = await BookingService.getBookingById(answers.bookingId);
-            if (!booking) {
-                throw new Error('Booking not found');
-            }
-            if (booking.status !== 'active') {
-                throw new Error('Booking is not active');
-            }
-
-            await ReturnService.processReturn(answers);
-        } catch (error) {
-            console.error('Error processing return:', error.message);
-            throw error;
+        // Validate booking exists and is viable for return
+        const booking = await BookingService.getBookingById(answers.bookingId);
+        if (!booking) {
+            throw new Error(`Booking with ID ${answers.bookingId} not found`);
         }
+        await ReturnService.processReturn(answers);
     }
 
-    static async viewReturnHistory(bookingId) {
+    // View return history
+    static async viewReturnHistory() {
         try {
-            const returns = await ReturnService.getReturnHistory(bookingId);
-            if (returns.length === 0) {
-                console.log('No return history found for this booking.');
-                return [];
-            }
-
+            // Get all returns from db
+            const returns = await ReturnService.getReturnHistory();
+            // Display returns in a table
             console.table(returns);
-            return returns;
         } catch (error) {
             console.error('Error viewing return history:', error.message);
             throw error;

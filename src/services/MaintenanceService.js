@@ -2,6 +2,8 @@ import db from '../config/database.js';
 
 class MaintenanceService {
     // Check if vehicle needs maintenance
+    // @param vehicleId is the ID of the vehicle to check
+    // @param newMileage is the updated mileage of the vehicle
     static async checkMaintenance(vehicleId, newMileage) {
         return new Promise((resolve, reject) => {
             db.get('SELECT * FROM vehicles WHERE id = ?', [vehicleId], (err, vehicle) => {
@@ -21,9 +23,9 @@ class MaintenanceService {
                 const needsMaintenance = newMileage >= lastMaintenanceMileage + maintenanceThreshold;
 
                 if (needsMaintenance) {
-                    // Calculate maintenance cost (1€ per kilometer since last maintenance)
+                    // Calculate maintenance cost
                     const kilometersSinceLastMaintenance = newMileage - lastMaintenanceMileage;
-                    const maintenanceCost = kilometersSinceLastMaintenance;
+                    const maintenanceCost = kilometersSinceLastMaintenance * vehicle.maintenance_cost_per_kilometer;
 
                     // Create maintenance record
                     const maintenanceDate = new Date();
@@ -61,6 +63,7 @@ class MaintenanceService {
                                 }
 
                                 db.run('COMMIT');
+                                // Overview for users
                                 console.log(`
                                     Automatic maintenance completed!
                                     Vehicle ID: ${vehicleId}
