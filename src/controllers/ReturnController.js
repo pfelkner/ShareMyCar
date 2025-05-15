@@ -1,5 +1,5 @@
-import ReturnService from '../services/ReturnService.js';
-import BookingService from '../services/BookingService.js';
+const ReturnService = require('../services/ReturnService.js');
+const BookingService = require('../services/BookingService.js');
 
 class ReturnController {
     // Process a return
@@ -27,4 +27,4 @@ class ReturnController {
     }
 }
 
-export default ReturnController; 
+module.exports = ReturnController; 

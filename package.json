@@ -3,15 +3,33 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "pkg ."
   },
   "keywords": [],
   "author": "Paul Felkner",
   "license": "ISC",
   "description": "",
-  "type": "module",
   "dependencies": {
-    "inquirer": "^12.6.1",
-    "sqlite3": "^5.1.7"
+    "better-sqlite3": "^11.10.0",
+    "inquirer": "^8.2.4"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "bin": "index.js",
+  "pkg": {
+    "targets": [
+      "node18-macos-arm64",
+      "node18-macos-x64",
+      "node18-linux-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "dist",
+    "assets": [
+      "src/**/*",
+      "vehicles.db",
+      "node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+    ]
   }
 }

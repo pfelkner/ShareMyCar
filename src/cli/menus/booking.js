@@ -1,6 +1,6 @@
-import inquirer from 'inquirer';
-import BookingController from '../../controllers/BookingController.js';
-import VehicleController from '../../controllers/VehicleController.js';
+const inquirer = require('inquirer');
+const BookingController = require('../../controllers/BookingController.js');
+const VehicleController = require('../../controllers/VehicleController.js');
 
 class BookingMenu {
     // Show the booking menu
@@ -115,4 +115,4 @@ class BookingMenu {
     }
 }
 
-export default BookingMenu; 
+module.exports = BookingMenu; 

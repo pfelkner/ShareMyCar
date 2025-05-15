@@ -1,4 +1,4 @@
-export const seedVehicles = [
+const seedVehicles = [
     // BMW vehicles
     {
         brand: 'BMW',
@@ -85,5 +85,23 @@ export const seedVehicles = [
         daily_rental_price: 90,
         maintenance_cost_per_kilometer: 0.18,
         is_available: true
+    },
+    {
+        brand: 'Toyota',
+        model: 'Corolla',
+        mileage: 50000,
+        daily_rental_price: 50,
+        maintenance_cost_per_kilometer: 0.1,
+        is_available: true
+    },
+    {
+        brand: 'Honda',
+        model: 'Civic',
+        mileage: 30000,
+        daily_rental_price: 45,
+        maintenance_cost_per_kilometer: 0.08,
+        is_available: true
     }
-]; 
+];
+
+module.exports = { seedVehicles }; 

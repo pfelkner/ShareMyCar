@@ -1,6 +1,6 @@
-import inquirer from 'inquirer';
-import ReturnController from '../../controllers/ReturnController.js';
-import BookingController from '../../controllers/BookingController.js';
+const inquirer = require('inquirer');
+const ReturnController = require('../../controllers/ReturnController.js');
+const BookingController = require('../../controllers/BookingController.js');
 
 class ReturnProcessingMenu {
     // Show the return processing menu
@@ -79,4 +79,4 @@ class ReturnProcessingMenu {
     }
 }
 
-export default ReturnProcessingMenu; 
+module.exports = ReturnProcessingMenu; 

@@ -1,5 +1,5 @@
-import inquirer from 'inquirer';
-import FinancialMetricsService from '../../services/FinancialMetricsService.js';
+const inquirer = require('inquirer');
+const FinancialMetricsService = require('../../services/FinancialMetricsService.js');
 
 class FinancialMetricsMenu {
     // Show the financial metrics menu
@@ -237,4 +237,4 @@ class FinancialMetricsMenu {
     }
 }
 
-export default FinancialMetricsMenu; 
+module.exports = FinancialMetricsMenu; 

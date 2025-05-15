@@ -1,6 +1,6 @@
-import inquirer from 'inquirer';
-import VehicleController from '../../controllers/VehicleController.js';
-import { ValidationError } from '../../utils/validators.js';
+const inquirer = require('inquirer');
+const VehicleController = require('../../controllers/VehicleController.js');
+const { ValidationError } = require('../../utils/validators.js');
 
 class VehicleManagementMenu {
     // Show the vehicle management menu
@@ -133,4 +133,4 @@ class VehicleManagementMenu {
     }
 }
 
-export default VehicleManagementMenu;
+module.exports = VehicleManagementMenu;

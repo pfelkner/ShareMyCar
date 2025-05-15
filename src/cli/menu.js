@@ -1,8 +1,8 @@
-import inquirer from 'inquirer';
-import VehicleManagementMenu from './menus/vehicleManagement.js';
-import BookingMenu from './menus/booking.js';
-import ReturnProcessingMenu from './menus/returnProcessing.js';
-import FinancialMetricsMenu from './menus/financialMetrics.js';
+const inquirer = require('inquirer');
+const VehicleManagementMenu = require('./menus/vehicleManagement.js');
+const BookingMenu = require('./menus/booking.js');
+const ReturnProcessingMenu = require('./menus/returnProcessing.js');
+const FinancialMetricsMenu = require('./menus/financialMetrics.js');
 
 class Menu {
     // This is the entrypoint for the Application
@@ -46,4 +46,4 @@ class Menu {
     }
 }
 
-export default Menu; 
+module.exports = Menu; 

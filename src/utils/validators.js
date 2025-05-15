@@ -1,4 +1,4 @@
-export class ValidationError extends Error {
+class ValidationError extends Error {
     constructor(message) {
         super(message);
         this.name = 'ValidationError';
@@ -6,7 +6,7 @@ export class ValidationError extends Error {
 }
 
 // Validate the vehicle data, let user know if any fields are missing or invalid
-export function validateVehicle(vehicleData) {
+function validateVehicle(vehicleData) {
     const requiredFields = [
         'brand',
         'model',
@@ -49,4 +49,9 @@ export function validateVehicle(vehicleData) {
     if (typeof vehicleData.is_available !== 'boolean') {
         throw new ValidationError('Availability must be a boolean');
     }
-} 
+}
+
+module.exports = {
+    ValidationError,
+    validateVehicle
+}; 

@@ -1,5 +1,5 @@
-import BookingService from '../services/BookingService.js';
-import VehicleController from './VehicleController.js';
+const BookingService = require('../services/BookingService.js');
+const VehicleController = require('./VehicleController.js');
 
 class BookingController {
     // Create a booking
@@ -52,4 +52,4 @@ class BookingController {
     }
 }
 
-export default BookingController; 
+module.exports = BookingController; 

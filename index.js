@@ -1,5 +1,5 @@
-import db from './src/config/database.js';
-import Menu from './src/cli/menu.js';
+const { db } = require('./src/config/database.js');
+const Menu = require('./src/cli/menu.js');
 
 // Handle cleanup on process termination
 process.on('SIGINT', () => {
